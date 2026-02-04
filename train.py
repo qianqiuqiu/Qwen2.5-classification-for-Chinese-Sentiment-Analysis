@@ -16,9 +16,6 @@ import numpy as np
 from typing import Dict, Any
 import wandb
 
-# 禁用 tokenizers 并行以避免 Windows 多进程问题
-os.environ["TOKENIZERS_PARALLELISM"] = "false"
-
 from datasets import load_dataset
 from transformers import (
     AutoModelForSequenceClassification,
