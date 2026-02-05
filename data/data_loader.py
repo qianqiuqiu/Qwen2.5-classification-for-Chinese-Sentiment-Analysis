@@ -12,6 +12,7 @@ import os
 def load_sentiment_dataset(
     dataset_name: str = "ChnSentiCorp",
     cache_dir: Optional[str] = None,
+    local_path: Optional[str] = None,
 ) -> DatasetDict:
     """
     加载情感分析数据集
@@ -19,6 +20,7 @@ def load_sentiment_dataset(
     Args:
         dataset_name: 数据集名称，支持 "ChnSentiCorp" 或 "IMDB_Chinese"
         cache_dir: 缓存目录
+        local_path: 本地数据集路径（HuggingFace 缓存格式）
     
     Returns:
         DatasetDict: 包含 train/validation/test 的数据集
@@ -31,11 +33,28 @@ def load_sentiment_dataset(
     if dataset_name == "ChnSentiCorp":
         # ChnSentiCorp 是一个中文酒店评论情感分析数据集
         # 约 9600 条训练数据，1200 条验证/测试数据
-        # 注意：新版 datasets 库不再支持 trust_remote_code，使用标准 Parquet 格式
-        dataset = load_dataset(
-            "lansinuote/ChnSentiCorp",  # 使用已转换为 Parquet 格式的版本
-            cache_dir=cache_dir,
-        )
+        
+        if local_path and os.path.exists(local_path):
+            # 从本地 HuggingFace 缓存加载
+            print(f"📂 从本地缓存加载数据集: {local_path}")
+            # HuggingFace 缓存的 Parquet 格式
+            data_dir = os.path.join(local_path, "data")
+            if os.path.exists(data_dir):
+                dataset = load_dataset(
+                    "parquet",
+                    data_dir=data_dir,
+                )
+            else:
+                # 尝试直接加载
+                dataset = load_dataset(
+                    local_path,
+                )
+        else:
+            # 从 HuggingFace Hub 在线下载
+            dataset = load_dataset(
+                "lansinuote/ChnSentiCorp",  # 使用已转换为 Parquet 格式的版本
+                cache_dir=cache_dir,
+            )
         
     elif dataset_name == "IMDB_Chinese":
         # 如果使用 IMDB 中文翻译版本

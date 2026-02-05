@@ -15,7 +15,10 @@ import torch
 import numpy as np
 from typing import Dict, Any
 import wandb
+import glob
 
+# 设置 HuggingFace 镜像（用于在线下载时加速）
+os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
 from datasets import load_dataset
 from transformers import (
     AutoModelForSequenceClassification,
@@ -41,6 +44,61 @@ from data import load_sentiment_dataset, create_tokenized_dataset, get_data_coll
 
 # 评估指标
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
+
+
+def get_local_model_path(model_name: str) -> str:
+    """
+    检测并返回本地模型路径
+    
+    Args:
+        model_name: HuggingFace 模型名称，如 "Qwen/Qwen2.5-1.5B"
+    
+    Returns:
+        本地模型路径或原始模型名称
+    """
+    # 将 HuggingFace 格式转换为本地缓存路径格式
+    # "Qwen/Qwen2.5-1.5B" -> "models--Qwen--Qwen2.5-1.5B"
+    cache_folder = "models--" + model_name.replace("/", "--")
+    
+    # 在当前目录下查找
+    if os.path.exists(cache_folder):
+        # 查找 snapshots 目录中的模型
+        snapshot_pattern = os.path.join(cache_folder, "snapshots", "*")
+        snapshots = glob.glob(snapshot_pattern)
+        if snapshots:
+            model_path = snapshots[0]  # 使用第一个快照
+            print(f"✅ 检测到本地模型: {model_path}")
+            return model_path
+    
+    print(f"🌐 本地模型不存在，将从 HuggingFace 下载: {model_name}")
+    return model_name
+
+
+def get_local_dataset_path(dataset_name: str) -> tuple:
+    """
+    检测并返回本地数据集路径
+    
+    Args:
+        dataset_name: HuggingFace 数据集名称，如 "lansinuote/ChnSentiCorp"
+    
+    Returns:
+        (是否使用本地, 数据集路径)
+    """
+    # 构建缓存文件夹名称
+    cache_folder = "datasets--" + dataset_name.replace("/", "--")
+    
+    # 在当前目录下查找
+    if os.path.exists(cache_folder):
+        # 查找 snapshots 目录
+        snapshot_pattern = os.path.join(cache_folder, "snapshots", "*")
+        snapshots = glob.glob(snapshot_pattern)
+        if snapshots:
+            dataset_path = snapshots[0]
+            print(f"✅ 检测到本地数据集: {dataset_path}")
+            return True, dataset_path
+    
+    print(f"🌐 本地数据集不存在，将从 HuggingFace 下载: {dataset_name}")
+    return False, dataset_name
 
 
 def get_last_checkpoint(output_dir: str) -> str:
@@ -207,8 +265,11 @@ def train(args: argparse.Namespace):
     """
     
     # ==================== 1. 配置初始化 ====================
+    # 检测本地模型
+    local_model_path = get_local_model_path(args.model_name)
+    
     model_config = ModelConfig(
-        model_name_or_path=args.model_name,
+        model_name_or_path=local_model_path,
         num_labels=2,
     )
     
@@ -243,7 +304,10 @@ def train(args: argparse.Namespace):
     
     # ==================== 4. 加载和处理数据 ====================
     print(f"\n正在加载数据集: {data_config.dataset_name}")
-    dataset = load_sentiment_dataset(data_config.dataset_name)
+    
+    # 检测本地数据集
+    use_local, dataset_path = get_local_dataset_path("lansinuote/ChnSentiCorp")
+    dataset = load_sentiment_dataset(data_config.dataset_name, local_path=dataset_path if use_local else None)
     
     print("正在进行分词处理...")
     tokenized_dataset = create_tokenized_dataset(

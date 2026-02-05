@@ -1,0 +1,25 @@
+# AutoDL专用依赖文件
+# 注意：torch已在镜像中预装，无需重新安装
+
+# 核心依赖
+transformers>=4.36.0
+datasets>=2.14.0
+peft>=0.7.0
+
+# 量化支持 (QLoRA) - RTX 3090必需
+bitsandbytes>=0.41.0
+
+# 评估指标
+scikit-learn>=1.3.0
+
+# 加速库
+accelerate>=0.25.0
+
+# 工具库
+tqdm>=4.65.0
+
+# 日志记录
+tensorboard>=2.14.0
+
+# 可选：wandb云端日志
+# wandb>=0.16.0
