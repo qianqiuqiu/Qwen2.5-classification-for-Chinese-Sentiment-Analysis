@@ -30,5 +30,30 @@
       "avg_inference_time_ms": 4.918088912963867,
       "qps": 203.33101285827584
     }
+  },
+  "qwen_zero_shot": {
+    "key": "qwen_zero_shot",
+    "name": "Qwen-1.5B Zero-shot (打分式)",
+    "description": "不微调，使用 CausalLM 基础模型 + prompt 模板 + label logprob 打分。严格 zero-shot：无任何参数训练，仅靠预训练知识。",
+    "method": {
+      "type": "label_scoring / logprob",
+      "prompt_template": "以下是一条中文评论，请判断它的情感倾向。\n评论：{text}\n情感倾向：",
+      "candidate_labels": {
+        "0": "负向",
+        "1": "正向"
+      },
+      "note": "对候选标签 token 计算 log probability，取 argmax 作为预测"
+    },
+    "metrics": {
+      "accuracy": 0.88,
+      "precision": 0.896414342629482,
+      "recall": 0.8687258687258688,
+      "f1": 0.8823529411764706,
+      "negative_recall": 0.8921161825726142,
+      "positive_recall": 0.8687258687258688,
+      "auc_roc": 0.9295727262532242,
+      "avg_inference_time_ms": 86.39927864074707,
+      "qps": 11.57417070758258
+    }
   }
 }
